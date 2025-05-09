@@ -100,6 +100,13 @@
             from { transform: scale(1); }
             to { transform: scale(1.12); }
         }
+        #streak {
+            margin-top: 20px;
+            font-size: 20px;
+            color: #fff;
+            font-family: 'Arial Black', sans-serif;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
     </style>
 </head>
 <body>
@@ -107,6 +114,7 @@
     <div id="controls">
         <button onclick="setStage(1)">Stage 1 (Easy)</button>
         <button onclick="setStage(2)">Stage 2 (Hard)</button>
+        <button onclick="setStage(3)">Stage 3 (Chaos)</button>
     </div>
 
     <h2>Space Bar Challenge</h2>
@@ -115,11 +123,13 @@
         <div id="slider"></div>
     </div>
     <div id="result"></div>
+    <div id="streak">Success Streak: 0</div>
 
     <script>
         const slider = document.getElementById("slider");
         const targetZone = document.getElementById("target-zone");
         const result = document.getElementById("result");
+        const streakDisplay = document.getElementById("streak");
 
         let direction = 1;
         let position = 0;
@@ -130,6 +140,15 @@
         let stage = 1;
         let lastTime = 0;
         let startTime = 0;
+        let successSound = new Audio("https://www.soundjay.com/buttons/sounds/beep-07.mp3");
+        successSound.volume = 1.0;
+        let successStreak = 0;
+        const containerWidth = 500;
+
+        function resetStreak() {
+            successStreak = 0;
+            streakDisplay.textContent = `Success Streak: ${successStreak}`;
+        }
 
         function setStage(level) {
             cancelAnimationFrame(animationId);
@@ -138,17 +157,23 @@
             position = 0;
             direction = 1;
             result.textContent = "";
+            // Removed resetStreak() from here
+            
 
-            if (stage === 2) {
+            if (stage === 3) {
+                speed = 8;
+                targetWidth = 30;
+            } else if (stage === 2) {
                 speed = 5;
                 targetWidth = 40;
-            } else {
+            }
+             else {
                 speed = 2;
                 targetWidth = 80;
             }
 
             targetZone.style.width = `${targetWidth}px`;
-            targetZone.style.left = `${(500 - targetWidth) / 2}px`;
+            targetZone.style.left = `${(containerWidth - targetWidth) / 2}px`;
             slider.style.left = "0px";
             lastTime = performance.now();
             animate();
@@ -160,8 +185,9 @@
 
             if (!inputLocked) {
                 position += direction * speed;
+                const maxPosition = containerWidth - slider.offsetWidth;
 
-                if (position <= 0 || position >= 460) {
+                if (position <= 0 || position >= maxPosition) {
                     direction *= -1;
                 }
 
@@ -176,8 +202,21 @@
                 result.textContent = "";
                 inputLocked = false;
                 lastTime = performance.now();
-                animate();
+                resetStreak(); // Reset streak here, after the animation completes
+                animate(); //restart the animation.
             }
+        }
+
+        function handleSuccess() {
+            result.textContent = "Perfect Timing!";
+            successSound.play();
+            successStreak++;
+            streakDisplay.textContent = `Success Streak: ${successStreak}`;
+        }
+
+        function handleFailure() {
+            result.textContent = "Try Again!";
+            resetStreak(); // Reset streak on failure
         }
 
         document.addEventListener("keydown", (e) => {
@@ -192,9 +231,9 @@
                 const targetRight = targetLeft + targetZone.offsetWidth;
 
                 if (sliderCenter >= targetLeft && sliderCenter <= targetRight) {
-                    result.textContent = "Perfect Timing!";
+                    handleSuccess();
                 } else {
-                    result.textContent = "Try Again!";
+                    handleFailure();
                 }
 
                 animate();
